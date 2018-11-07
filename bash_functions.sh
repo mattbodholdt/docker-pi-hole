@@ -11,7 +11,7 @@ prepare_configs() {
     # Re-apply perms from basic-install over any volume mounts that may be present (or not)
     chown pihole:root /etc/lighttpd
     chown pihole:pihole "${PI_HOLE_CONFIG_DIR}/pihole-FTL.conf" "/var/log/pihole" "${regexFile}"
-    chmod 644 "${PI_HOLE_CONFIG_DIR}/pihole-FTL.conf" 
+    chmod 644 "${PI_HOLE_CONFIG_DIR}/pihole-FTL.conf"
     # not sure why pihole:pihole user/group write perms are not enough for web to write...dirty fix:
     chmod 777 "${regexFile}"
     touch /var/log/pihole-FTL.log /run/pihole-FTL.pid /run/pihole-FTL.port /var/log/pihole.log
@@ -23,7 +23,7 @@ prepare_configs() {
     # Update version numbers
     pihole updatechecker
     # Re-write all of the setupVars to ensure required ones are present (like QUERY_LOGGING)
-    
+
     # If the setup variable file exists,
     if [[ -e "${setupVars}" ]]; then
         # update the variables in the file
@@ -79,34 +79,21 @@ validate_env() {
 
 setup_dnsmasq_dns() {
     . /opt/pihole/webpage.sh
-    local DNS1="${1:-8.8.8.8}"
-    local DNS2="${2:-8.8.4.4}"
-    local dnsType='default'
-    if [ "$DNS1" != '8.8.8.8' ] || [ "$DNS2" != '8.8.4.4' ] ; then
-        dnsType='custom'
-    fi;
+    local DNS1="${1:-127.0.0.1#5353}"
+    local dnsType='custom'
 
     if [ ! -f /.piholeFirstBoot ] ; then
         local setupDNS1="$(grep 'PIHOLE_DNS_1' ${setupVars})"
-        local setupDNS2="$(grep 'PIHOLE_DNS_2' ${setupVars})"
-        if [[ -n "$DNS1" && -n "$setupDNS1"  ]] || \
-           [[ -n "$DNS2" && -n "$setupDNS2"  ]] ; then 
+        if [[ -n "$DNS1" && -n "$setupDNS1"  ]] ; then
                 echo "Docker DNS variables not used"
         fi
         echo "Existing DNS servers used"
         return
     fi
 
-    echo "Using $dnsType DNS servers: $DNS1 & $DNS2"
+    echo "Using $dnsType DNS server: $DNS1"
     if [[ -n "$DNS1" && -z "$setupDNS1" ]] ; then
         change_setting "PIHOLE_DNS_1" "${DNS1}"
-    fi
-    if [[ -n "$DNS2" && -z "$setupDNS2" ]] ; then
-        if [ "$DNS2" = "no" ] ; then
-            delete_setting "PIHOLE_DNS_2"
-        else
-            change_setting "PIHOLE_DNS_2" "${DNS2}"
-        fi
     fi
 }
 
@@ -129,11 +116,10 @@ setup_dnsmasq_config_if_missing() {
 
 setup_dnsmasq() {
     local dns1="$1"
-    local dns2="$2"
     local interface="$3"
-    # Coordinates 
+    # Coordinates
     setup_dnsmasq_config_if_missing
-    setup_dnsmasq_dns "$dns1" "$dns2" 
+    setup_dnsmasq_dns "$dns1"
     setup_dnsmasq_interface "$interface"
     ProcessDNSSettings
 }
@@ -210,7 +196,7 @@ setup_web_port() {
     # Quietly exit early for empty or default
     if [[ -z "${1}" || "${1}" == '80' ]] ; then return ; fi
 
-    if ! echo $1 | grep -q '^[0-9][0-9]*$' ; then 
+    if ! echo $1 | grep -q '^[0-9][0-9]*$' ; then
         echo "$warning - $1 is not an integer"
         return
     fi
@@ -281,7 +267,7 @@ test_configs() {
 
 
 setup_blocklists() {
-    local blocklists="$1"   
+    local blocklists="$1"
     # Exit/return early without setting up adlists with defaults for any of the following conditions:
     # 1. NO_SETUP env is set
     exit_string="(exiting ${FUNCNAME[0]} early)"
@@ -299,9 +285,9 @@ setup_blocklists() {
     fi
 
     # 3. If we're running tests, use a small list of fake tests to speed everything up
-    if [ -n "$PYTEST" ]; then 
+    if [ -n "$PYTEST" ]; then
         echo ":::::: Tests are being ran - stub out ad list fetching and add a fake ad block ${exit_string}"
-        sed -i 's/^gravity_spinup$/#gravity_spinup # DISABLED FOR PYTEST/g' "$(which gravity.sh)" 
+        sed -i 's/^gravity_spinup$/#gravity_spinup # DISABLED FOR PYTEST/g' "$(which gravity.sh)"
         echo '123.123.123.123 testblock.pi-hole.local' > "/var/www/html/fake.list"
         echo 'file:///var/www/html/fake.list' > "${adlistFile}"
         echo 'http://localhost/fake.list' >> "${adlistFile}"
