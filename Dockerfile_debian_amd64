@@ -21,6 +21,7 @@ ADD ./s6/debian-root /
 ADD ./s6/service /usr/local/bin/service
 ADD ./dnscrypt-proxy/dnscrypt-proxy.toml /dnscrypt-proxy.toml
 ADD ./start-pihole.sh /start-pihole.sh
+RUN chmod +x /start-pihole.sh
 
 RUN  git clone https://github.com/jedisct1/dnscrypt-proxy src && \
         cd src/dnscrypt-proxy && \
